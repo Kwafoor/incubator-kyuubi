@@ -577,6 +577,14 @@ object KyuubiConf {
       .stringConf
       .createOptional
 
+  val ENGINE_SPARK_MAX_LIFETIME: ConfigEntry[Long] =
+    buildConf("kyuubi.session.engine.spark.max.lifetime")
+      .doc("Max lifetime for spark engine, the engine will self-terminate when it reaches the" +
+        " end of life. 0 or negative means not to self-terminate.")
+      .version("1.6.0")
+      .timeConf
+      .createWithDefault(0)
+
   val ENGINE_LOGIN_TIMEOUT: ConfigEntry[Long] = buildConf("session.engine.login.timeout")
     .doc("The timeout of creating the connection to remote sql query engine")
     .version("1.0.0")

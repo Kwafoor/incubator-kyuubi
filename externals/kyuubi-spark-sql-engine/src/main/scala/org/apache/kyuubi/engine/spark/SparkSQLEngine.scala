@@ -18,8 +18,9 @@
 package org.apache.kyuubi.engine.spark
 
 import java.time.Instant
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
 import org.apache.spark.{ui, SparkConf}
@@ -33,9 +34,9 @@ import org.apache.kyuubi.config.KyuubiConf._
 import org.apache.kyuubi.engine.spark.SparkSQLEngine.{countDownLatch, currentEngine}
 import org.apache.kyuubi.engine.spark.events.{EngineEvent, EngineEventsStore, EventLoggingService}
 import org.apache.kyuubi.ha.HighAvailabilityConf._
-import org.apache.kyuubi.ha.client.RetryPolicies
+import org.apache.kyuubi.ha.client.{EngineServiceDiscovery, RetryPolicies}
 import org.apache.kyuubi.service.Serverable
-import org.apache.kyuubi.util.SignalRegister
+import org.apache.kyuubi.util.{SignalRegister, ThreadUtils}
 
 case class SparkSQLEngine(
     spark: SparkSession,
@@ -43,6 +44,12 @@ case class SparkSQLEngine(
 
   override val backendService = new SparkSQLBackendService(spark)
   override val frontendServices = Seq(new SparkThriftBinaryFrontendService(this))
+
+  @volatile private var shutdown = false
+  @volatile private var deregistered = false
+
+  private val lifetimeTerminatingChecker =
+    ThreadUtils.newDaemonSingleThreadScheduledExecutor("spark-engine-lifetime-checker")
 
   override def initialize(conf: KyuubiConf): Unit = {
     val listener = new SparkSQLEngineListener(this, store)
@@ -58,10 +65,57 @@ case class SparkSQLEngine(
       assert(currentEngine.isDefined)
       currentEngine.get.stop()
     })
+
+    startLifetimeTerminatingChecker(() => {
+      assert(currentEngine.isDefined)
+      currentEngine.get.stop()
+    })
+  }
+
+  override def stop(): Unit = synchronized {
+    super.stop()
+
+    shutdown = true
+    val shutdownTimeout = conf.get(ENGINE_EXEC_POOL_SHUTDOWN_TIMEOUT)
+    ThreadUtils.shutdown(
+      lifetimeTerminatingChecker,
+      Duration(shutdownTimeout, TimeUnit.MILLISECONDS))
   }
 
   override protected def stopServer(): Unit = {
     countDownLatch.countDown()
+  }
+
+  private[kyuubi] def startLifetimeTerminatingChecker(stop: () => Unit): Unit = {
+    val interval = conf.get(ENGINE_CHECK_INTERVAL)
+    val maxLifetime = conf.get(ENGINE_SPARK_MAX_LIFETIME)
+    if (maxLifetime > 0) {
+      val checkTask = new Runnable {
+        override def run(): Unit = {
+          if (!shutdown && System.currentTimeMillis() - getStartTime > maxLifetime) {
+            if (!deregistered) {
+              info(s"Spark engine has been running for more than $maxLifetime ms," +
+                s" deregistering from engine discovery space.")
+              frontendServices.flatMap(_.discoveryService).map {
+                case engineServiceDiscovery: EngineServiceDiscovery => engineServiceDiscovery.stop()
+              }
+              deregistered = true
+            }
+
+            if (backendService.sessionManager.getOpenSessionCount <= 0) {
+              info(s"Spark engine has been running for more than $maxLifetime ms" +
+                s" and no open session now, terminating")
+              stop()
+            }
+          }
+        }
+      }
+      lifetimeTerminatingChecker.scheduleWithFixedDelay(
+        checkTask,
+        interval,
+        interval,
+        TimeUnit.MILLISECONDS)
+    }
   }
 }
 

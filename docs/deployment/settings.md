@@ -311,7 +311,7 @@ kyuubi\.session\.engine<br>\.startup\.maxLogLines|<div style='width: 65pt;word-w
 kyuubi\.session\.idle<br>\.timeout|<div style='width: 65pt;word-wrap: break-word;white-space: normal'>PT6H</div>|<div style='width: 170pt;word-wrap: break-word;white-space: normal'>session idle timeout, it will be closed when it's not accessed for this duration</div>|<div style='width: 30pt'>duration</div>|<div style='width: 20pt'>1.2.0</div>
 kyuubi\.session\.name|<div style='width: 65pt;word-wrap: break-word;white-space: normal'>&lt;undefined&gt;</div>|<div style='width: 170pt;word-wrap: break-word;white-space: normal'>A human readable name of session and we use empty string by default. This name will be recorded in event. Note that, we only apply this value from session conf.</div>|<div style='width: 30pt'>string</div>|<div style='width: 20pt'>1.4.0</div>
 kyuubi\.session<br>\.timeout|<div style='width: 65pt;word-wrap: break-word;white-space: normal'>PT6H</div>|<div style='width: 170pt;word-wrap: break-word;white-space: normal'>(deprecated)session timeout, it will be closed when it's not accessed for this duration</div>|<div style='width: 30pt'>duration</div>|<div style='width: 20pt'>1.0.0</div>
-
+kyuubi\.session\.engine<br>\.spark\.max\.lifetime|<div style='width: 65pt;word-wrap: break-word;white-space: normal'>PT0S</div>|<div style='width: 170pt;word-wrap: break-word;white-space: normal'>Max lifetime for spark engine, the engine will self-terminate when it reaches the end of life. 0 or negative means not to self-terminate.</div>|<div style='width: 30pt'>duration</div>|<div style='width: 20pt'>1.6.0</div>
 
 ### Zookeeper
 

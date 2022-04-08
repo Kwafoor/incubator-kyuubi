@@ -17,7 +17,10 @@
 
 package org.apache.kyuubi.util
 
-import java.util.concurrent.{LinkedBlockingQueue, ScheduledExecutorService, ScheduledThreadPoolExecutor, ThreadPoolExecutor, TimeUnit}
+import java.util.concurrent.{ExecutorService, LinkedBlockingQueue, ScheduledExecutorService, ScheduledThreadPoolExecutor, ThreadPoolExecutor, TimeUnit}
+
+import scala.concurrent.Awaitable
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 import org.apache.kyuubi.Logging
 
@@ -48,5 +51,21 @@ object ThreadUtils extends Logging {
       nameFactory)
     executor.allowCoreThreadTimeOut(true)
     executor
+  }
+  def shutdown(
+                executor: ExecutorService,
+                gracePeriod: Duration = FiniteDuration(30, TimeUnit.SECONDS)): Unit = {
+    val shutdownTimeout = gracePeriod.toMillis
+    if (executor != null) {
+      executor.shutdown()
+      try {
+        executor.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)
+      } catch {
+        case e: InterruptedException =>
+          warn(
+            s"Exceeded timeout($shutdownTimeout ms) to wait the exec-pool shutdown gracefully",
+            e)
+      }
+    }
   }
 }
