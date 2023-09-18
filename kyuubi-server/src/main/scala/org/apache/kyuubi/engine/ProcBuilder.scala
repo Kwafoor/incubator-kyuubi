@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 
 import scala.collection.JavaConverters._
+import scala.collection.convert.ImplicitConversions.`iterable AsScalaIterable`
 
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.collect.EvictingQueue
@@ -152,7 +153,8 @@ trait ProcBuilder {
     pb
   }
 
-  @volatile private var error: Throwable = UNCAUGHT_ERROR
+  private val engineLogMaxErrors = conf.get(KyuubiConf.SESSION_ENGINE_STARTUP_MAX_LOG_ERRORS)
+  private val error: EvictingQueue[Throwable] = EvictingQueue.create(engineLogMaxErrors)
 
   private val engineLogMaxLines = conf.get(KyuubiConf.SESSION_ENGINE_STARTUP_MAX_LOG_LINES)
 
@@ -219,7 +221,6 @@ trait ProcBuilder {
             if (containsException(line) &&
               !line.contains("at ") && !line.startsWith("Caused by:")) {
               val sb = new StringBuilder(line)
-              error = KyuubiSQLException(sb.toString() + s"\n See more: $engineLog")
               line = reader.readLine()
               while (sb.length < maxErrorSize && line != null &&
                 (containsException(line) ||
@@ -229,7 +230,7 @@ trait ProcBuilder {
                 line = reader.readLine()
               }
 
-              error = KyuubiSQLException(sb.toString() + s"\n See more: $engineLog")
+              error.add(KyuubiSQLException(sb.toString() + s"\n See more: $engineLog"))
             } else if (line != null) {
               lastRowsOfLog.add(line)
             }
@@ -266,18 +267,19 @@ trait ProcBuilder {
   }
 
   def getError: Throwable = synchronized {
-    if (error == UNCAUGHT_ERROR) {
+    if (error.isEmpty) {
       Thread.sleep(1000)
     }
     val lastLogRows = lastRowsOfLog.toArray.mkString("\n")
-    error match {
-      case UNCAUGHT_ERROR =>
-        KyuubiSQLException(s"Failed to detect the root cause, please check $engineLog at server " +
-          s"side if necessary. The last $engineLogMaxLines line(s) of log are:\n" +
-          s"${lastRowsOfLog.toArray.mkString("\n")}")
-      case other =>
-        KyuubiSQLException(s"${Utils.stringifyException(other)}.\n" +
-          s"FYI: The last $engineLogMaxLines line(s) of log are:\n$lastLogRows")
+
+    if (error.isEmpty) {
+      KyuubiSQLException(s"Failed to detect the root cause, please check $engineLog at server " +
+        s"side if necessary. The last $engineLogMaxLines line(s) of log are:\n" +
+        s"$lastLogRows")
+    } else {
+      val errorStr = error.map(Utils.stringifyException).mkString("\n")
+      KyuubiSQLException(s"The last ${error.size()} error(s) are:\n$errorStr \n" +
+        s"FYI: The last $engineLogMaxLines line(s) of log are:\n$lastLogRows")
     }
   }
 
