@@ -19,7 +19,6 @@ package org.apache.kyuubi.spark.connector.tpcds
 
 import io.trino.tpcds.Table
 import io.trino.tpcds.generator.CallCenterGeneratorColumn
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.execution.datasources.v2.BatchScanExec
 
@@ -27,16 +26,12 @@ import org.apache.kyuubi.KyuubiFunSuite
 import org.apache.kyuubi.spark.connector.common.LocalSparkSession.withSparkSession
 import org.apache.kyuubi.spark.connector.tpcds.TPCDSConf._
 
-class TPCDSTableSuite extends KyuubiFunSuite {
+class TPCDSTableSuite extends KyuubiFunSuite with TPCDSSuiteBase {
 
   test("useAnsiStringType (true, false)") {
     Seq(true, false).foreach(key => {
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-        .set("spark.sql.catalog.tpcds.useAnsiStringType", key.toString)
-      withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
+      val conf = sparkConf.set("spark.sql.catalog.tpcds.useAnsiStringType", key.toString)
+      withSparkSession(SparkSession.builder.config(conf).getOrCreate()) { spark =>
         val rows = spark.sql("desc tpcds.sf1.call_center").collect()
         rows.foreach(row => {
           val dataType = row.getString(1)
@@ -63,10 +58,6 @@ class TPCDSTableSuite extends KyuubiFunSuite {
   test("test nullable column") {
     TPCDSSchemaUtils.BASE_TABLES.foreach { tpcdsTable =>
       val tableName = tpcdsTable.getName
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
       withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
         val sparkTable = spark.table(s"tpcds.sf1.$tableName")
         var notNullBitMap = 0
@@ -125,14 +116,10 @@ class TPCDSTableSuite extends KyuubiFunSuite {
 
   test("test maxPartitionBytes") {
     val maxPartitionBytes: Long = 1 * 1024 * 1024L
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set(
-        s"$TPCDS_CONNECTOR_READ_CONF_PREFIX.$MAX_PARTITION_BYTES_CONF",
-        String.valueOf(maxPartitionBytes))
-    withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
+    val conf = sparkConf.set(
+      s"$TPCDS_CONNECTOR_READ_CONF_PREFIX.$MAX_PARTITION_BYTES_CONF",
+      String.valueOf(maxPartitionBytes))
+    withSparkSession(SparkSession.builder.config(conf).getOrCreate()) { spark =>
       val tableName = "catalog_returns"
       val table = Table.getTable(tableName)
       val scale = 100

@@ -40,7 +40,7 @@ import org.apache.kyuubi.spark.connector.common.LocalSparkSession.withSparkSessi
  * }}}
  */
 @Slow
-class TPCDSQuerySuite extends KyuubiFunSuite {
+class TPCDSQuerySuite extends KyuubiFunSuite with TPCDSSuiteBase {
 
   val queries: Set[String] = (1 to 99).map(i => s"q$i").toSet -
     ("q14", "q23", "q24", "q39") +
@@ -48,13 +48,8 @@ class TPCDSQuerySuite extends KyuubiFunSuite {
 
   test("run query on tiny") {
     val viewSuffix = "view"
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.catalog.tpcds.useTableSchema_2_6", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
-      spark.sql("USE tpcds.tiny")
+      loadTPDSTINY(spark)
       queries.map { queryName =>
         val in = Utils.getContextOrKyuubiClassLoader
           .getResourceAsStream(s"kyuubi/tpcds_3.2/$queryName.sql")
@@ -78,5 +73,13 @@ class TPCDSQuerySuite extends KyuubiFunSuite {
         }
       }
     }
+  }
+
+  override def sparkConf: SparkConf = {
+    super.sparkConf.set("spark.sql.catalog.tpcds.useTableSchema_2_6", "true")
+  }
+
+  def loadTPDSTINY(sc: SparkSession): Unit = {
+    sc.sql("USE tpcds.tiny")
   }
 }
