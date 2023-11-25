@@ -21,7 +21,7 @@ import org.apache.kyuubi.operation.{JDBCTestHelper, SparkQueryTests}
 import org.apache.kyuubi.tags.GlutenTest
 
 @GlutenTest
-class SparkGlutenSute extends WithSparkSQLEngine with JDBCTestHelper with SparkQueryTests {
+class SparkGlutenSuite extends WithSparkSQLEngine with JDBCTestHelper with SparkQueryTests {
 
   val jarPath = "/src/test/resources/gluten-velox-bundle-spark3.2_2.12-ubuntu_22.04-1.0.0.jar"
 
