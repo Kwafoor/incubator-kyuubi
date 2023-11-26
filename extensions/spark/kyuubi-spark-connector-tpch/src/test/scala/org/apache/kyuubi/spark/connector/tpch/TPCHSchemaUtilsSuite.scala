@@ -20,7 +20,7 @@ package org.apache.kyuubi.spark.connector.tpch
 import org.apache.kyuubi.KyuubiFunSuite
 import org.apache.kyuubi.spark.connector.tpch.TPCHSchemaUtils.normalize
 
-class TPCHSchemaUtilsSuite extends KyuubiFunSuite {
+class TPCHSchemaUtilsSuite extends KyuubiFunSuite{
 
   test("normalize scale") {
     assert(normalize(1) === "1")

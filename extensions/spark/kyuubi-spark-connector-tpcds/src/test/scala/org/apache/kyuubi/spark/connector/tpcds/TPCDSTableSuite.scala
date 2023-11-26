@@ -31,11 +31,7 @@ class TPCDSTableSuite extends KyuubiFunSuite {
 
   test("useAnsiStringType (true, false)") {
     Seq(true, false).foreach(key => {
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-        .set("spark.sql.catalog.tpcds.useAnsiStringType", key.toString)
+      sparkConf.set("spark.sql.catalog.tpcds.useAnsiStringType", key.toString)
       withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
         val rows = spark.sql("desc tpcds.sf1.call_center").collect()
         rows.foreach(row => {
@@ -63,10 +59,6 @@ class TPCDSTableSuite extends KyuubiFunSuite {
   test("test nullable column") {
     TPCDSSchemaUtils.BASE_TABLES.foreach { tpcdsTable =>
       val tableName = tpcdsTable.getName
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
       withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
         val sparkTable = spark.table(s"tpcds.sf1.$tableName")
         var notNullBitMap = 0
@@ -125,11 +117,7 @@ class TPCDSTableSuite extends KyuubiFunSuite {
 
   test("test maxPartitionBytes") {
     val maxPartitionBytes: Long = 1 * 1024 * 1024L
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set(
+    sparkConf.set(
         s"$TPCDS_CONNECTOR_READ_CONF_PREFIX.$MAX_PARTITION_BYTES_CONF",
         String.valueOf(maxPartitionBytes))
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
@@ -146,5 +134,12 @@ class TPCDSTableSuite extends KyuubiFunSuite {
         (TPCDSStatisticsUtils.sizeInBytes(table, scale) / maxPartitionBytes).ceil.toInt
       assert(scan.get.planInputPartitions.length == expected)
     }
+  }
+
+  def sparkConf: SparkConf = {
+    new SparkConf().setMaster("local[*]")
+      .set("spark.ui.enabled", "false")
+      .set("spark.sql.catalogImplementation", "in-memory")
+      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
   }
 }

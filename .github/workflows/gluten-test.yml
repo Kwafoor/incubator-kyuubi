@@ -68,3 +68,15 @@ jobs:
           name: gluten-velox-package
           path: |
             gluten/package/target/
+      - name: Install jar to local Maven repository
+        run: mvn install:install-file -Dfile=gluten/package/target/gluten-velox-bundle-spark3.4_2.12-ubuntu_22.04-1.1.0-SNAPSHOT.jar -DgroupId=io.glutenproject -DartifactId=gluten-velox-bundle-spark3.2_2.12-ubuntu_22.04 -Dversion=1.1.0-SNAPSHOT -Dpackaging=jar
+
+      - name: Run Gluten TPC-DS Tests
+        run: |
+          TEST_MODULES="kyuubi-server,extensions/spark/kyuubi-spark-gluten"
+          ./build/mvn ${MVN_OPT} -pl ${TEST_MODULES} -am clean install -DskipTests
+          ./build/mvn ${MVN_OPT} -pl ${TEST_MODULES} test \
+          -Dmaven.plugin.scalatest.exclude.tags='' \
+          -Dtest=none -DwildcardSuites=org.apache.kyuubi.spark.gluten
+      
+      

@@ -46,10 +46,6 @@ class TPCHQuerySuite extends KyuubiFunSuite {
 
   test("run query on tiny") {
     val viewSuffix = "view"
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       spark.sql("USE tpch.tiny")
       queries.map { queryName =>
@@ -75,5 +71,12 @@ class TPCHQuerySuite extends KyuubiFunSuite {
         }
       }
     }
+  }
+
+  def sparkConf: SparkConf = {
+    new SparkConf().setMaster("local[*]")
+      .set("spark.ui.enabled", "false")
+      .set("spark.sql.catalogImplementation", "in-memory")
+      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
   }
 }

@@ -30,12 +30,7 @@ import org.apache.kyuubi.spark.connector.common.SparkUtils.SPARK_RUNTIME_VERSION
 class TPCDSCatalogSuite extends KyuubiFunSuite {
 
   test("get catalog name") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { _ =>
       val catalog = new TPCDSCatalog
@@ -46,12 +41,8 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("supports namespaces") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       spark.sql("USE tpcds")
@@ -65,11 +56,7 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
       "TINY,sf10" -> Seq("tiny", "sf10"),
       "sf1 , " -> Seq("sf1"),
       "none" -> Seq.empty[String]).foreach { case (confValue, expectedExcludeDatabases) =>
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-        .set("spark.sql.catalog.tpcds.excludeDatabases", confValue)
+      sparkConf.set("spark.sql.catalog.tpcds.excludeDatabases", confValue)
       withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
         spark.sql("USE tpcds")
         assert(
@@ -80,12 +67,7 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpcds.sf1 stats") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       def assertStats(tableName: String, sizeInBytes: BigInt, rowCount: BigInt): Unit = {
@@ -125,12 +107,7 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("nonexistent table") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       val exception = intercept[AnalysisException] {
@@ -142,12 +119,7 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpcds.tiny count and checksum") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       tableInfo.foreach {
@@ -205,4 +177,11 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
     ("tpcds.tiny.web_returns", ("1152", "2464383243098")),
     ("tpcds.tiny.web_sales", ("11876", "25458905770096")),
     ("tpcds.tiny.web_site", ("2", "3798438288")))
+
+  def sparkConf: SparkConf = {
+    new SparkConf().setMaster("local[*]")
+      .set("spark.ui.enabled", "false")
+      .set("spark.sql.catalogImplementation", "in-memory")
+      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
+  }
 }

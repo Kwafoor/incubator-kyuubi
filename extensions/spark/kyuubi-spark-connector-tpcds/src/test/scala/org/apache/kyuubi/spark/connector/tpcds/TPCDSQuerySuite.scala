@@ -48,11 +48,6 @@ class TPCDSQuerySuite extends KyuubiFunSuite {
 
   test("run query on tiny") {
     val viewSuffix = "view"
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.catalog.tpcds.useTableSchema_2_6", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       spark.sql("USE tpcds.tiny")
       queries.map { queryName =>
@@ -78,5 +73,13 @@ class TPCDSQuerySuite extends KyuubiFunSuite {
         }
       }
     }
+  }
+
+  def sparkConf: SparkConf = {
+    new SparkConf().setMaster("local[*]")
+      .set("spark.ui.enabled", "false")
+      .set("spark.sql.catalogImplementation", "in-memory")
+      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
+      .set("spark.sql.catalog.tpcds.useTableSchema_2_6", "true")
   }
 }

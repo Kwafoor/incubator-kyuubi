@@ -28,12 +28,7 @@ import org.apache.kyuubi.spark.connector.common.SparkUtils.SPARK_RUNTIME_VERSION
 class TPCHCatalogSuite extends KyuubiFunSuite {
 
   test("get catalog name") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { _ =>
       val catalog = new TPCHCatalog
@@ -44,12 +39,7 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
   }
 
   test("supports namespaces") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       spark.sql("USE tpch")
@@ -63,11 +53,7 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
       "TINY,sf10" -> Seq("tiny", "sf10"),
       "sf1 , " -> Seq("sf1"),
       "none" -> Seq.empty[String]).foreach { case (confValue, expectedExcludeDatabases) =>
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-        .set("spark.sql.catalog.tpch.excludeDatabases", confValue)
+      sparkConf.set("spark.sql.catalog.tpch.excludeDatabases", confValue)
       withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
         spark.sql("USE tpch")
         assert(
@@ -78,12 +64,7 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpch.tiny count") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       assert(spark.table("tpch.tiny.customer").count === 1500)
@@ -98,12 +79,7 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpch.sf0 count") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       assert(spark.table("tpch.sf0.customer").count === 0)
@@ -118,12 +94,7 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpch.sf1 stats") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
+    sparkConf.set("spark.sql.cbo.enabled", "true")
       .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       def assertStats(tableName: String, sizeInBytes: BigInt, rowCount: BigInt): Unit = {
@@ -147,13 +118,6 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
   }
 
   test("nonexistent table") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
-      .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       val exception = intercept[AnalysisException] {
         spark.table("tpch.sf1.nonexistent_table")
@@ -161,5 +125,12 @@ class TPCHCatalogSuite extends KyuubiFunSuite {
       assert(exception.message.contains("Table or view not found")
         || exception.message.contains("TABLE_OR_VIEW_NOT_FOUND"))
     }
+  }
+
+  def sparkConf: SparkConf = {
+    new SparkConf().setMaster("local[*]")
+      .set("spark.ui.enabled", "false")
+      .set("spark.sql.catalogImplementation", "in-memory")
+      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
   }
 }
