@@ -25,6 +25,7 @@ Gluten is a Spark plugin developed by Intel, designed to accelerate Apache Spark
 ### Build gluten velox backend package
 
 Git clone gluten project, use gluten build script `buildbundle-veloxbe.sh`, and target package is in `/path/to/gluten/package/target/`
+
 ```bash
 git clone https://github.com/oap-project/gluten.git
 cd /path/to/gluten
@@ -44,9 +45,11 @@ add gluten jar: `copy /path/to/gluten/package/target/gluten-velox-bundle-spark3.
 ### Configure
 
 add config into `spark-defaults.conf`:
+
 ```properties
 spark.plugins=io.glutenproject.GlutenPlugin
 spark.memory.offHeap.size=20g
 spark.memory.offHeap.enabled=true
 spark.shuffle.manager=org.apache.spark.shuffle.sort.ColumnarShuffleManager
 ```
+
