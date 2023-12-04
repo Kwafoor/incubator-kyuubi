@@ -20,7 +20,6 @@ package org.apache.kyuubi.spark.connector.tpch
 import scala.collection.JavaConverters._
 import scala.io.{Codec, Source}
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.scalatest.tags.Slow
 
@@ -40,18 +39,14 @@ import org.apache.kyuubi.spark.connector.common.LocalSparkSession.withSparkSessi
  * }}}
  */
 @Slow
-class TPCHQuerySuite extends KyuubiFunSuite {
+class TPCHQuerySuite extends KyuubiFunSuite with TPCHSuiteBase {
 
-  val queries: List[String] = (1 to 22).map(i => s"q$i").toList
+  val queries: Set[String] = (1 to 22).map(i => s"q$i").toSet
 
   test("run query on tiny") {
     val viewSuffix = "view"
-    val sparkConf = new SparkConf().setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpch", classOf[TPCHCatalog].getName)
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
-      spark.sql("USE tpch.tiny")
+      loadTPCHTINY(spark)
       queries.map { queryName =>
         val in = Utils.getContextOrKyuubiClassLoader.getResourceAsStream(
           s"kyuubi/tpch/$queryName.sql")
@@ -70,5 +65,9 @@ class TPCHQuerySuite extends KyuubiFunSuite {
         assert(sumHashResult == tuple._2, s"query $name result not match")
       }
     }
+  }
+
+  def loadTPCHTINY(sc: SparkSession): Unit = {
+    sc.sql("USE tpch.tiny")
   }
 }

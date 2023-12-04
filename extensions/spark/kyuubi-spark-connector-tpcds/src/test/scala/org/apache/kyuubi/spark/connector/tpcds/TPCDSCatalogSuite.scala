@@ -27,16 +27,9 @@ import org.apache.kyuubi.KyuubiFunSuite
 import org.apache.kyuubi.spark.connector.common.LocalSparkSession.withSparkSession
 import org.apache.kyuubi.spark.connector.common.SparkUtils.SPARK_RUNTIME_VERSION
 
-class TPCDSCatalogSuite extends KyuubiFunSuite {
+class TPCDSCatalogSuite extends KyuubiFunSuite with TPCDSSuiteBase {
 
   test("get catalog name") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
-      .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { _ =>
       val catalog = new TPCDSCatalog
       val catalogName = "test"
@@ -46,13 +39,6 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("supports namespaces") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
-      .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       spark.sql("USE tpcds")
       assert(spark.sql(s"SHOW DATABASES").collect().length == 11)
@@ -65,12 +51,10 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
       "TINY,sf10" -> Seq("tiny", "sf10"),
       "sf1 , " -> Seq("sf1"),
       "none" -> Seq.empty[String]).foreach { case (confValue, expectedExcludeDatabases) =>
-      val sparkConf = new SparkConf().setMaster("local[*]")
-        .set("spark.ui.enabled", "false")
-        .set("spark.sql.catalogImplementation", "in-memory")
-        .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-        .set("spark.sql.catalog.tpcds.excludeDatabases", confValue)
-      withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
+      val conf = sparkConf.set("spark.sql.catalog.tpcds.excludeDatabases", confValue)
+        .remove("spark.sql.cbo.enabled")
+        .remove("spark.sql.cbo.planStats.enabled")
+      withSparkSession(SparkSession.builder.config(conf).getOrCreate()) { spark =>
         spark.sql("USE tpcds")
         assert(
           spark.sql(s"SHOW DATABASES").collect.map(_.getString(0)).sorted ===
@@ -80,13 +64,6 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpcds.sf1 stats") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
-      .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       def assertStats(tableName: String, sizeInBytes: BigInt, rowCount: BigInt): Unit = {
         val stats = spark.table(tableName).queryExecution.analyzed.stats
@@ -125,13 +102,6 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("nonexistent table") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
-      .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       val exception = intercept[AnalysisException] {
         spark.table("tpcds.sf1.nonexistent_table")
@@ -142,13 +112,6 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
   }
 
   test("tpcds.tiny count and checksum") {
-    val sparkConf = new SparkConf()
-      .setMaster("local[*]")
-      .set("spark.ui.enabled", "false")
-      .set("spark.sql.catalogImplementation", "in-memory")
-      .set("spark.sql.catalog.tpcds", classOf[TPCDSCatalog].getName)
-      .set("spark.sql.cbo.enabled", "true")
-      .set("spark.sql.cbo.planStats.enabled", "true")
     withSparkSession(SparkSession.builder.config(sparkConf).getOrCreate()) { spark =>
       tableInfo.foreach {
         case (table, (expectCount, expectChecksum)) =>
@@ -205,4 +168,9 @@ class TPCDSCatalogSuite extends KyuubiFunSuite {
     ("tpcds.tiny.web_returns", ("1152", "2464383243098")),
     ("tpcds.tiny.web_sales", ("11876", "25458905770096")),
     ("tpcds.tiny.web_site", ("2", "3798438288")))
+
+  override def sparkConf: SparkConf = {
+    super.sparkConf.set("spark.sql.cbo.enabled", "true")
+      .set("spark.sql.cbo.planStats.enabled", "true")
+  }
 }
