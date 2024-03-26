@@ -50,5 +50,11 @@
                 <module>kyuubi-gluten-it</module>
             </modules>
         </profile>
+        <profile>
+            <id>comet-it</id>
+            <modules>
+                <module>kyuubi-comet-it</module>
+            </modules>
+        </profile>
     </profiles>
 </project>

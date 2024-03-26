@@ -25,22 +25,22 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>kyuubi-gluten-it_${scala.binary.version}</artifactId>
-    <name>Kyuubi Test Gluten IT</name>
+    <artifactId>kyuubi-comet-it_${scala.binary.version}</artifactId>
+    <name>Kyuubi Test Comet IT</name>
     <url>https://kyuubi.apache.org/</url>
 
     <properties>
-        <gluten.version>1.2.0-SNAPSHOT</gluten.version>
-        <gluten.artifact.name>gluten-velox-bundle-spark${spark.binary.version}_${scala.binary.version}-ubuntu_22.04</gluten.artifact.name>
+        <comet.version>0.1.0-SNAPSHOT</comet.version>
+        <comet.artifact.name>comet-parent-spark3.4_${scala.binary.version}</comet.artifact.name>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>io.glutenproject</groupId>
-            <artifactId>${gluten.artifact.name}</artifactId>
-            <version>${gluten.version}</version>
+            <groupId>org.apache.comet</groupId>
+            <artifactId>${comet.artifact.name}</artifactId>
+            <version>${comet.version}</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../../gluten/package/target/gluten-velox-bundle-spark3.4_2.12-ubuntu_22.04-1.1.0-SNAPSHOT.jar</systemPath>
+            <systemPath>${project.basedir}/../../comet/package/target/comet-spark-spark3.4_2.12-0.1.0-SNAPSHOT.jar</systemPath>
         </dependency>
 
         <dependency>
@@ -97,10 +97,9 @@
 
     <profiles>
         <profile>
-            <id>gluten-it</id>
+            <id>comet-it</id>
             <properties>
                 <maven.plugin.scalatest.exclude.tags></maven.plugin.scalatest.exclude.tags>
-                <maven.plugin.scalatest.include.tags>org.apache.kyuubi.tags.GlutenTest</maven.plugin.scalatest.include.tags>
             </properties>
         </profile>
         <profile>
