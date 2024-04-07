@@ -89,6 +89,7 @@ class KyuubiSyncThriftClient private (
       "engine-alive-probe-" + _aliveProbeSessionHandle)
     val task = new Runnable {
       override def run(): Unit = {
+        error("EngineAliveProbe run")
         if (!remoteEngineBroken && !engineConnectionClosed) {
           engineAliveProbeClient.foreach { client =>
             val tGetInfoReq = new TGetInfoReq()
@@ -108,10 +109,13 @@ class KyuubiSyncThriftClient private (
                   error(s"Mark the engine[$engineIdStr] not alive with no recent alive probe" +
                     s" success: ${now - engineLastAlive} ms exceeds timeout $engineAliveTimeout ms")
                   remoteEngineBroken = true
+                  error("EngineAliveProbe set remoteEngineBroken true")
+
                 }
             }
           }
         } else {
+          error("EngineAliveProbe ready to exit")
           warn(s"Removing Clients for ${_remoteSessionHandle}")
           Seq(protocol).union(engineAliveProbeProtocol.toSeq).foreach { tProtocol =>
             Utils.tryLogNonFatalError {

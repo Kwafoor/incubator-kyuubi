@@ -344,6 +344,7 @@ class KyuubiOperationPerConnectionSuite extends WithKyuubiServer with HiveJDBCTe
         eventually(timeout(3.seconds)) {
           assert(session.client.asyncRequestInterrupted)
         }
+        assert(false == true)
       }
     }
   }
